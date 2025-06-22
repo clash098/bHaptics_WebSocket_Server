@@ -38,7 +38,6 @@ namespace bHapticsServer
                     IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
                     byte[] receivedBytes = udpServer.Receive(ref remoteEP);
                     string receivedText = Encoding.UTF8.GetString(receivedBytes);
-
                     HandleMessage(receivedText);
                 }
             }
