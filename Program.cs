@@ -83,12 +83,12 @@ namespace bHapticsServer
         {
             if(message == "protubeinit")
             {
-                ForceTubeVRInterface.InitAsync();
+                ForceTubeVRInterface.InitAsync(true);
                 Console.WriteLine("Initializing Protube devices");
             }
             else
             {
-                string[] paramshaptic = message.Split('=')[1].Split(',');
+                string[] paramshaptic = message.Split('=')[1].Split('.');
                 int kickPower = int.TryParse(paramshaptic[1], out int res) ? res : 0;
                 float rumblePower = float.TryParse(paramshaptic[2], out float res2) ? res2 : 0f;
                 float rumbleDuration = float.TryParse(paramshaptic[3], out float res3) ? res3 : 0f;
