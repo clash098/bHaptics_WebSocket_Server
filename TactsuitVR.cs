@@ -1,30 +1,17 @@
-﻿using Bhaptics.Tact;
+﻿using Bhaptics.SDK2;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Threading;
 
-namespace BhapticsTactsuit
+namespace bHaptics
 {
-
     public class TactsuitVR
     {
-        public bool systemInitialized = false;
+        public bool tactsuitInit = false;
         // Event to start and stop the heartbeat thread
         private static ManualResetEvent HeartBeat_mrse = new ManualResetEvent(false);
-        // dictionary of all feedback patterns found in the bHaptics directory
-        public Dictionary<String, FileInfo> FeedbackMap = new Dictionary<String, FileInfo>();
 
-#pragma warning disable CS0618 // remove warning that the C# library is deprecated
-        public HapticPlayer hapticPlayer;
-#pragma warning restore CS0618 
-
-        private static RotationOption defaultRotationOption = new RotationOption(0.0f, 0.0f);
-
-        public string heartBeatEffect = "HeartBeat";
-        public float rumbleIntensity = 1.0f;
         public int heartbeatCount = 0;
+        public int heartbeatMax = 4;
 
         public void HeartBeatFunc()
         {
@@ -32,111 +19,45 @@ namespace BhapticsTactsuit
             {
                 // Check if reset event is active
                 HeartBeat_mrse.WaitOne();
-                PlaybackHaptics(heartBeatEffect);
-                if (heartbeatCount > 15)
+                PlaybackHaptics("HeartBeat");
+                if (heartbeatCount > heartbeatMax)
                 {
                     StopHeartBeat();
                 }
                 heartbeatCount++;
-                Thread.Sleep(1000);
+                Thread.Sleep(600);
             }
         }
-
-        public TactsuitVR(string appId, string appName)
-        {
-
-            LOG("Initializing suit");
-            try
-            {
-#pragma warning disable CS0618 // remove warning that the C# library is deprecated
-                hapticPlayer = new HapticPlayer(appId, appName);
-#pragma warning restore CS0618
-            }
-            catch { LOG("Suit initialization failed!"); }
-            RegisterAllTactFiles();
-            LOG("Starting HeartBeat thread...");
-            Thread HeartBeatThread = new Thread(HeartBeatFunc);
-            HeartBeatThread.Start();
-        }
-
         public void LOG(string logStr)
         {
             Console.WriteLine(logStr);
         }
 
-
-        void RegisterAllTactFiles()
+        public TactsuitVR()
         {
-            // Get location of the compiled assembly and search through "bHaptics" directory and contained patterns
-            string assemblyFile = Assembly.GetExecutingAssembly().Location;
-            string myPath = Path.GetDirectoryName(assemblyFile);
-            LOG("Assembly path: " + myPath);
-            string configPath = myPath + "\\bHaptics";
-            DirectoryInfo d = new DirectoryInfo(configPath);
-            FileInfo[] Files = d.GetFiles("*.tact", SearchOption.AllDirectories);
-            for (int i = 0; i < Files.Length; i++)
-            {
-                string filename = Files[i].Name;
-                string fullName = Files[i].FullName;
-                string prefix = Path.GetFileNameWithoutExtension(filename);
-                if (filename == "." || filename == "..")
-                    continue;
-                string tactFileStr = File.ReadAllText(fullName);
-                try
-                {
-                    hapticPlayer.RegisterTactFileStr(prefix, tactFileStr);
-                    LOG("Pattern registered: " + prefix);
-                }
-                catch (Exception e) { LOG(e.ToString()); }
+            LOG("Initializing suit");
+            var res = BhapticsSDK2.Initialize("693419bae0edb252ba6516d4", "wa4ZYJQXTCH3oAgty55O", "");
 
-                FeedbackMap.Add(prefix, Files[i]);
+            if (res > 0)
+            {
+                LOG("Failed to do bhaptics initialization...");
+                return;
             }
-            systemInitialized = true;
+            LOG("Starting HeartBeat thread...");
+            Thread HeartBeatThread = new Thread(HeartBeatFunc);
+            HeartBeatThread.Start();
+            PlaybackHaptics("HeartBeat");
+            tactsuitInit = true;
         }
 
-        public void PlayHapticsWithDelay(String key, int delay)
+        public void PlaybackHaptics(String key, float intensity = 1.0f, float duration = 1.0f, float xzAngle = 0f, float yShift = 0f)
         {
-            Thread thread = new Thread(() =>
-            {
-                Thread.Sleep(delay);
-                PlaybackHaptics(key);
-            });
-            thread.Start();
+            int res;
+            res = BhapticsSDK2.Play(key.ToLower(), intensity, duration, xzAngle, yShift);
         }
 
-        public void PlaybackHaptics(String key, bool forced = true, float intensity = 1.0f, float duration = 1.0f, RotationOption rotation = null)
+        public void StartHeartBeat()
         {
-            Dictionary<String, FileInfo> MapCopy = new Dictionary<String, FileInfo>(FeedbackMap);
-            if (MapCopy.ContainsKey(key))
-            {
-                ScaleOption scaleOption = new ScaleOption(intensity, duration);
-                if (hapticPlayer.IsPlaying() && !forced)
-                {
-                    return;
-                }
-                else
-                {
-                    if(rotation == null)
-                    {
-                        rotation = defaultRotationOption;
-                    }
-                    hapticPlayer.SubmitRegisteredVestRotation(key, key, rotation, scaleOption);
-                }
-            }
-            else
-            {
-                LOG("Feedback not registered: " + key);
-            }
-        }
-
-        public bool IsPlayingEffect(string effectName)
-        {
-            return hapticPlayer.IsPlaying(effectName);
-        }
-
-        public void StartHeartBeat(bool fast = false)
-        {
-            heartBeatEffect = (fast) ? "HeartBeatFast" : "HeartBeat";
             HeartBeat_mrse.Set();
         }
 
@@ -146,18 +67,20 @@ namespace BhapticsTactsuit
             heartbeatCount = 0;
         }
 
+        public bool IsPlaying(String effect)
+        {
+            return BhapticsSDK2.IsPlaying(effect.ToLower());
+        }
+
         public void StopHapticFeedback(String effect)
         {
-            hapticPlayer.TurnOff(effect);
+            BhapticsSDK2.Stop(effect.ToLower());
         }
 
         public void StopAllHapticFeedback()
         {
             StopThreads();
-            foreach (String key in FeedbackMap.Keys)
-            {
-                hapticPlayer.TurnOff(key);
-            }
+            BhapticsSDK2.StopAll();
         }
 
         public void StopThreads()

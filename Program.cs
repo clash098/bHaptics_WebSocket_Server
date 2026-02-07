@@ -1,10 +1,8 @@
-﻿using BhapticsTactsuit;
+﻿using bHaptics;
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
-using Bhaptics.Tact;
 
 namespace bHapticsServer
 {
@@ -13,19 +11,9 @@ namespace bHapticsServer
         public static int udpPort = 5015;
         public static TactsuitVR tactsuitVR;
 
-        static void Main(string[] args)
+        static void Main()
         {
-            var arguments = ParseArguments(args);
-            arguments.TryGetValue("appId", out string appId);
-            appId = appId ?? "bHapticsMod";
-            Console.WriteLine("App ID: " + appId);
-            arguments.TryGetValue("appName", out string appName);
-            appName = appName ?? "bHapticsMod";
-            Console.WriteLine("App Name: " + appName);
-
-            Console.Title = appName;
-
-            tactsuitVR = new TactsuitVR(appId, appName);
+            tactsuitVR = new TactsuitVR();
             CreateUdpServer();
         }
 
@@ -68,9 +56,8 @@ namespace bHapticsServer
                 float duration = float.TryParse(paramshaptic[2], out float res2) ? res2 : 1f;
                 float offsetX = float.TryParse(paramshaptic[3], out float res3) ? res3 : 0;
                 float offsetY = float.TryParse(paramshaptic[4], out float res4) ? res4 : 0;
-                RotationOption rotation = new RotationOption(offsetX, offsetY);
 
-                tactsuitVR.PlaybackHaptics(paramshaptic[0], true, intensity, duration, rotation);
+                tactsuitVR.PlaybackHaptics(paramshaptic[0], intensity, duration, offsetX, offsetY);
                 Console.WriteLine("Playing effect with params: " + message);
             }
             else
@@ -114,33 +101,6 @@ namespace bHapticsServer
                         break;
                 }
             }
-        }
-
-        static Dictionary<string, string> ParseArguments(string[] args)
-        {
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                string arg = args[i];
-
-                if (arg.StartsWith("-"))
-                {
-                    string key = arg.TrimStart('-');
-
-                    if (i + 1 < args.Length && !args[i + 1].StartsWith("-"))
-                    {
-                        result[key] = args[i + 1];
-                        i++;
-                    }
-                    else
-                    {
-                        result[key] = "true";
-                    }
-                }
-            }
-
-            return result;
         }
     }
 }
