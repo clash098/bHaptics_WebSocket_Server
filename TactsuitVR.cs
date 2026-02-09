@@ -36,7 +36,7 @@ namespace bHaptics
         public TactsuitVR()
         {
             LOG("Initializing suit");
-            var res = BhapticsSDK2.Initialize("693419bae0edb252ba6516d4", "wa4ZYJQXTCH3oAgty55O", "");
+            var res = BhapticsSDK2.Initialize("", "", "");
 
             if (res > 0)
             {
