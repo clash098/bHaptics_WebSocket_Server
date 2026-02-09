@@ -6,100 +6,54 @@ using System.Text;
 
 namespace bHapticsServer
 {
-    internal class Program
+    internal static class Program
     {
-        public static int udpPort = 5015;
+        private const int UdpPort = 5015;
         public static TactsuitVR tactsuitVR;
 
-        static void Main()
+        private static void Main()
         {
             tactsuitVR = new TactsuitVR();
             CreateUdpServer();
         }
 
-        static void CreateUdpServer()
+        private static void CreateUdpServer()
         {
-            using (UdpClient udpServer = new UdpClient(new IPEndPoint(IPAddress.Loopback, udpPort)))
+            using (var udpServer = new UdpClient(new IPEndPoint(IPAddress.Loopback, UdpPort)))
             {
-                Console.WriteLine($"UDP Server started listening on 127.0.0.1:{udpPort}");
+                Console.WriteLine($"UDP Server started listening on 127.0.0.1:{UdpPort}");
 
                 while (true)
                 {
-                    IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] receivedBytes = udpServer.Receive(ref remoteEP);
-                    string receivedText = Encoding.UTF8.GetString(receivedBytes);
+                    var remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                    var receivedBytes = udpServer.Receive(ref remoteEndPoint);
+                    var receivedText = Encoding.UTF8.GetString(receivedBytes);
                     HandleMessage(receivedText);
                 }
             }
+            // ReSharper disable once FunctionNeverReturns
         }
 
-        static void HandleMessage(string message)
+        private static void HandleMessage(string message)
         {
             Console.WriteLine($"Received message: {message}");
-
-            if (message.Contains("protube"))
-            {
-                HandleProtubeMessage(message);
-            }
-            else
-            {
-                HandleBhapticsMessage(message);
-            }
-        }
-
-        static void HandleBhapticsMessage(string message)
-        {
+    
             if(message.Contains(","))
             {
-                string[] paramshaptic = message.Split(',');                
-                float intensity = float.TryParse(paramshaptic[1], out float res) ? res : 1f;
-                float duration = float.TryParse(paramshaptic[2], out float res2) ? res2 : 1f;
-                float offsetX = float.TryParse(paramshaptic[3], out float res3) ? res3 : 0;
-                float offsetY = float.TryParse(paramshaptic[4], out float res4) ? res4 : 0;
+                var parameters = message.Split(',');        
+                var effectKey = parameters[0];
+                var intensity = float.TryParse(parameters[1], out var intensityResult) ? intensityResult : 1f;
+                var duration = float.TryParse(parameters[2], out var durationResult) ? durationResult : 1f;
+                var offsetX = float.TryParse(parameters[3], out var offsetXResult) ? offsetXResult : 0;
+                var offsetY = float.TryParse(parameters[4], out var offsetYResult) ? offsetYResult : 0;
 
-                tactsuitVR.PlaybackHaptics(paramshaptic[0], intensity, duration, offsetX, offsetY);
-                Console.WriteLine("Playing effect with params: " + message);
+                tactsuitVR.PlaybackHaptics(effectKey, intensity, duration, offsetX, offsetY);
+                Console.WriteLine($"Playing effect with parameters: {message}");
             }
             else
             {
                 tactsuitVR.PlaybackHaptics(message);
-                Console.WriteLine("Playing effect: " +  message);
-            }
-        }
-
-        // protube=method.kickvalue.rumblevalue.rumbleduration.channel
-        static void HandleProtubeMessage(string message)
-        {
-            if(message == "protubeinit")
-            {
-                ForceTubeVRInterface.InitAsync(true);
-                Console.WriteLine("Initializing Protube devices");
-            }
-            else
-            {
-                string[] paramshaptic = message.Split('=')[1].Split('.');
-                int kickPower = int.TryParse(paramshaptic[1], out int res) ? res : 0;
-                float rumblePower = float.TryParse(paramshaptic[2], out float res2) ? res2 : 0f;
-                float rumbleDuration = float.TryParse(paramshaptic[3], out float res3) ? res3 : 0f;
-                int channel = int.TryParse(paramshaptic[4], out int res4) ? res4 : 0;
-
-                switch (paramshaptic[0])
-                {
-                    case "kick":
-                        ForceTubeVRInterface.Kick((byte)kickPower, (ForceTubeVRChannel)channel);
-                        Console.WriteLine($"Protube Kick with params: {message}");
-                        break;
-                    case "shoot":
-                        ForceTubeVRInterface.Shoot((byte)kickPower, (byte)rumblePower, (byte)rumbleDuration, (ForceTubeVRChannel)channel);
-                        Console.WriteLine($"Protube Rumble with params: {message}");
-                        break;
-                    case "rumble":
-                        ForceTubeVRInterface.Rumble((byte)rumblePower, (byte)rumbleDuration, (ForceTubeVRChannel)channel);
-                        Console.WriteLine($"Protube Shoot with params: {message}");
-                        break;
-                    default:
-                        break;
-                }
+                Console.WriteLine($"Playing effect: {message}");
             }
         }
     }
