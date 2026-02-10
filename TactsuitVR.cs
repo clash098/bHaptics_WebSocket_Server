@@ -1,25 +1,41 @@
 ﻿using Bhaptics.SDK2;
-using System;
 using System.Threading;
 
-namespace bHaptics
+namespace bHapticsServer
 {
     public class TactsuitVR
     {
-        public bool tactsuitInit = false;
-        // Event to start and stop the heartbeat thread
-        private static ManualResetEvent HeartBeat_mrse = new ManualResetEvent(false);
+        private static ManualResetEvent HeartBeat_morse = new ManualResetEvent(false);
 
-        public int heartbeatCount = 0;
-        public int heartbeatMax = 4;
+        public int heartbeatCount;
+        public const int heartbeatMax = 4;
+        
+        public TactsuitVR()
+        {
+            Logger.Log("Initializing bHaptics suit!");
+            var result = BhapticsSDK2.Initialize("", "", "");
 
+            if (result > 0)
+            {
+                Logger.Log("Failed to do bHaptics initialization...");
+                return;
+            }
+            
+            Logger.Log("Starting HeartBeat thread...");
+            
+            var HeartBeatThread = new Thread(HeartBeatFunc);
+            HeartBeatThread.Start();
+            
+            PlaybackHaptics("HeartBeat");
+        }
+        
         public void HeartBeatFunc()
         {
             while (true)
             {
-                // Check if reset event is active
-                HeartBeat_mrse.WaitOne();
+                HeartBeat_morse.WaitOne();
                 PlaybackHaptics("HeartBeat");
+                
                 if (heartbeatCount > heartbeatMax)
                 {
                     StopHeartBeat();
@@ -28,51 +44,29 @@ namespace bHaptics
                 Thread.Sleep(600);
             }
         }
-        public void LOG(string logStr)
-        {
-            Console.WriteLine(logStr);
-        }
 
-        public TactsuitVR()
+        public static void PlaybackHaptics(string key, float intensity = 1.0f, float duration = 1.0f, float xzAngle = 0f, float yShift = 0f)
         {
-            LOG("Initializing suit");
-            var res = BhapticsSDK2.Initialize("693419bae0edb252ba6516d4", "wa4ZYJQXTCH3oAgty55O", "");
-
-            if (res > 0)
-            {
-                LOG("Failed to do bhaptics initialization...");
-                return;
-            }
-            LOG("Starting HeartBeat thread...");
-            Thread HeartBeatThread = new Thread(HeartBeatFunc);
-            HeartBeatThread.Start();
-            PlaybackHaptics("HeartBeat");
-            tactsuitInit = true;
-        }
-
-        public void PlaybackHaptics(String key, float intensity = 1.0f, float duration = 1.0f, float xzAngle = 0f, float yShift = 0f)
-        {
-            int res;
-            res = BhapticsSDK2.Play(key.ToLower(), intensity, duration, xzAngle, yShift);
+            BhapticsSDK2.Play(key.ToLower(), intensity, duration, xzAngle, yShift);
         }
 
         public void StartHeartBeat()
         {
-            HeartBeat_mrse.Set();
+            HeartBeat_morse.Set();
         }
 
         public void StopHeartBeat()
         {
-            HeartBeat_mrse.Reset();
+            HeartBeat_morse.Reset();
             heartbeatCount = 0;
         }
 
-        public bool IsPlaying(String effect)
+        public bool IsPlaying(string effect)
         {
             return BhapticsSDK2.IsPlaying(effect.ToLower());
         }
 
-        public void StopHapticFeedback(String effect)
+        public void StopHapticFeedback(string effect)
         {
             BhapticsSDK2.Stop(effect.ToLower());
         }

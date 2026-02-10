@@ -1,5 +1,4 @@
-﻿using bHaptics;
-using System;
+﻿using System;
 using System.Net.Sockets;
 using System.Net;
 using System.Text;
@@ -47,12 +46,12 @@ namespace bHapticsServer
                 var offsetX = float.TryParse(parameters[3], out var offsetXResult) ? offsetXResult : 0;
                 var offsetY = float.TryParse(parameters[4], out var offsetYResult) ? offsetYResult : 0;
 
-                tactsuitVR.PlaybackHaptics(effectKey, intensity, duration, offsetX, offsetY);
+                TactsuitVR.PlaybackHaptics(effectKey, intensity, duration, offsetX, offsetY);
                 Console.WriteLine($"Playing effect with parameters: {message}");
             }
             else
             {
-                tactsuitVR.PlaybackHaptics(message);
+                TactsuitVR.PlaybackHaptics(message);
                 Console.WriteLine($"Playing effect: {message}");
             }
         }
