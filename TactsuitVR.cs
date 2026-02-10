@@ -13,7 +13,7 @@ namespace bHapticsServer
         public TactsuitVR()
         {
             Logger.Log("Initializing bHaptics suit!");
-            var result = BhapticsSDK2.Initialize("", "", "");
+            var result = BhapticsSDK2.Initialize("698abca726ed978f93a4df8b", "nvra3XIknUllyu9uOkoI");
 
             if (result > 0)
             {
